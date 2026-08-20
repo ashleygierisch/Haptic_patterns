@@ -16,4 +16,5 @@ library;
 
 export 'src/haptic_instruction.dart';
 export 'src/haptic_pattern.dart';
+export 'src/haptic_patterns_presets.dart';
 export 'src/haptic_player.dart';
