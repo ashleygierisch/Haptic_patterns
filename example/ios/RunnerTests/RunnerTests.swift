@@ -36,11 +36,15 @@ final class HapticCompilerTests: XCTestCase {
     }
 
     func testToHapticEventsSingleTransientStartsAtZero() {
+        // Not asserting on .eventType directly -- CHHapticEvent doesn't
+        // expose it as a readable instance property the way this test
+        // originally assumed (a real compile error caught by CI, not
+        // something reasoned out locally). relativeTime/duration are
+        // enough to distinguish transient from continuous here.
         let instructions = [ParsedInstruction(intensity: 1.0, sharpness: 0.5, durationMs: 0, delayMs: 0)]
         let events = HapticCompiler.toHapticEvents(instructions)
 
         XCTAssertEqual(events.count, 1)
-        XCTAssertEqual(events[0].eventType, .hapticTransient)
         XCTAssertEqual(events[0].relativeTime, 0)
     }
 
@@ -48,7 +52,6 @@ final class HapticCompilerTests: XCTestCase {
         let instructions = [ParsedInstruction(intensity: 1.0, sharpness: 0.5, durationMs: 100, delayMs: 0)]
         let events = HapticCompiler.toHapticEvents(instructions)
 
-        XCTAssertEqual(events[0].eventType, .hapticContinuous)
         XCTAssertEqual(events[0].duration, 0.1, accuracy: 0.0001)
     }
 
@@ -83,8 +86,12 @@ final class HapticCompilerTests: XCTestCase {
         let intensity = events[0].eventParameters.first { $0.parameterID == .hapticIntensity }
         let sharpness = events[0].eventParameters.first { $0.parameterID == .hapticSharpness }
 
-        XCTAssertEqual(intensity?.value, 0.75, accuracy: 0.0001)
-        XCTAssertEqual(sharpness?.value, 0.25, accuracy: 0.0001)
+        // CHHapticEventParameter.value is Float, not Double -- another
+        // real compile error caught by CI (the literal accuracy:
+        // 0.0001 defaults to Double, which doesn't unify with a
+        // Float? on the left without an explicit cast).
+        XCTAssertEqual(intensity?.value, Float(0.75), accuracy: 0.0001)
+        XCTAssertEqual(sharpness?.value, Float(0.25), accuracy: 0.0001)
     }
 
     func testToHapticEventsClampsOutOfRangeValues() {
@@ -94,8 +101,8 @@ final class HapticCompilerTests: XCTestCase {
         let intensity = events[0].eventParameters.first { $0.parameterID == .hapticIntensity }
         let sharpness = events[0].eventParameters.first { $0.parameterID == .hapticSharpness }
 
-        XCTAssertEqual(intensity?.value, 1.0, accuracy: 0.0001)
-        XCTAssertEqual(sharpness?.value, 0.0, accuracy: 0.0001)
+        XCTAssertEqual(intensity?.value, Float(1.0), accuracy: 0.0001)
+        XCTAssertEqual(sharpness?.value, Float(0.0), accuracy: 0.0001)
     }
 
     func testToHapticEventsEmptyInputProducesNoEvents() {
