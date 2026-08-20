@@ -5,13 +5,14 @@
 Pod::Spec.new do |s|
   s.name             = 'haptic_patterns'
   s.version          = '0.0.1'
-  s.summary          = 'A new Flutter plugin project.'
+  s.summary          = 'Composable haptic feedback patterns for Flutter.'
   s.description      = <<-DESC
-A new Flutter plugin project.
+Composable haptic feedback patterns for Flutter -- chain, repeat, and
+compose taps, buzzes, and custom sequences on Android and iOS.
                        DESC
-  s.homepage         = 'http://example.com'
+  s.homepage         = 'https://github.com/modexanderson/haptic_patterns'
   s.license          = { :file => '../LICENSE' }
-  s.author           = { 'Your Company' => 'email@example.com' }
+  s.author           = { 'Mordecai Shekwogaza' => 'mordecai.a.d@gmail.com' }
   s.source           = { :path => '.' }
   s.source_files = 'Classes/**/*'
   s.dependency 'Flutter'

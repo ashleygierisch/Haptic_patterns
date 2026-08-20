@@ -33,3 +33,26 @@ jobs:
         working-directory: example
       - run: ./gradlew :haptic_patterns:testDebugUnitTest --console=plain
         working-directory: example/android
+
+  ios-native-tests:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+      - run: flutter pub get
+        working-directory: example
+      - name: Generate iOS build config (creates Podfile if missing)
+        run: flutter build ios --config-only --no-codesign
+        working-directory: example
+      - run: pod install
+        working-directory: example/ios
+      - name: Run XCTest suite on iOS Simulator
+        working-directory: example/ios
+        run: |
+          xcodebuild test \
+            -workspace Runner.xcworkspace \
+            -scheme Runner \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            -only-testing:RunnerTests
