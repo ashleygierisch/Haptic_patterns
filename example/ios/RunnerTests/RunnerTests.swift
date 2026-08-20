@@ -90,8 +90,8 @@ final class HapticCompilerTests: XCTestCase {
         // real compile error caught by CI (the literal accuracy:
         // 0.0001 defaults to Double, which doesn't unify with a
         // Float? on the left without an explicit cast).
-        XCTAssertEqual(intensity?.value, Float(0.75), accuracy: 0.0001)
-        XCTAssertEqual(sharpness?.value, Float(0.25), accuracy: 0.0001)
+        XCTAssertEqual(intensity?.value ?? -1, Float(0.75), accuracy: 0.0001)
+        XCTAssertEqual(sharpness?.value ?? -1, Float(0.25), accuracy: 0.0001)
     }
 
     func testToHapticEventsClampsOutOfRangeValues() {
@@ -101,8 +101,8 @@ final class HapticCompilerTests: XCTestCase {
         let intensity = events[0].eventParameters.first { $0.parameterID == .hapticIntensity }
         let sharpness = events[0].eventParameters.first { $0.parameterID == .hapticSharpness }
 
-        XCTAssertEqual(intensity?.value, Float(1.0), accuracy: 0.0001)
-        XCTAssertEqual(sharpness?.value, Float(0.0), accuracy: 0.0001)
+        XCTAssertEqual(intensity?.value ?? -1, Float(1.0), accuracy: 0.0001)
+        XCTAssertEqual(sharpness?.value ?? -1, Float(0.0), accuracy: 0.0001)
     }
 
     func testToHapticEventsEmptyInputProducesNoEvents() {
