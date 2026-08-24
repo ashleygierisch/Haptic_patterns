@@ -155,5 +155,22 @@ void main() {
       final short = HapticPatterns.buzz.compile().single;
       expect(long.durationMs, greaterThan(short.durationMs));
     });
+
+    test('swoosh is a genuine fading curve, not a fixed 3-segment approximation', () {
+      final compiled = HapticPatterns.swoosh.compile();
+      expect(compiled.length, greaterThan(3));
+      expect(compiled.first.intensity, greaterThan(compiled.last.intensity));
+      for (var i = 1; i < compiled.length; i++) {
+        expect(compiled[i].intensity, lessThanOrEqualTo(compiled[i - 1].intensity));
+      }
+    });
+
+    test('pulse is three identical beats spaced evenly apart', () {
+      final compiled = HapticPatterns.pulse.compile();
+      expect(compiled, hasLength(3));
+      expect(compiled[1].delayMs, compiled[2].delayMs);
+      expect(compiled[0].intensity, compiled[1].intensity);
+      expect(compiled[1].intensity, compiled[2].intensity);
+    });
   });
 }

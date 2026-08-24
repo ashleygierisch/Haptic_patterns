@@ -165,3 +165,117 @@ final class HapticSequence extends HapticPattern {
   @override
   String toString() => 'HapticSequence($patterns)';
 }
+
+/// Repeats [pattern] [count] times, with [gap] between each repetition.
+///
+/// Requires a finite [count] -- there's no "loop forever" here, since
+/// this compiles to a flat, finite instruction list like every other
+/// pattern (see [HapticPattern.compile]). For genuinely indefinite
+/// playback (a heartbeat that continues while a call is ringing, say),
+/// have the caller re-trigger `.play()` on a timer instead; a single
+/// fire-and-forget native call isn't a good fit for unbounded
+/// playback regardless of how this pattern compiled.
+///
+/// ```dart
+/// // Three buzzes, 80ms apart -- equivalent to hand-writing
+/// // HapticSequence([buzz, delay(80), buzz, delay(80), buzz]).
+/// HapticRepeat(HapticEvent.buzz(), count: 3, gap: Duration(milliseconds: 80));
+/// ```
+final class HapticRepeat extends HapticPattern {
+  final HapticPattern pattern;
+  final int count;
+  final Duration gap;
+
+  const HapticRepeat(this.pattern, {required this.count, this.gap = Duration.zero})
+      : assert(count >= 0, 'count must be >= 0');
+
+  @override
+  List<HapticInstruction> compile() {
+    if (count == 0) return const [];
+
+    final singleCycle = pattern.compile();
+    if (singleCycle.isEmpty) return const [];
+
+    final result = <HapticInstruction>[];
+    for (var i = 0; i < count; i++) {
+      for (var j = 0; j < singleCycle.length; j++) {
+        final instruction = singleCycle[j];
+        final extraDelay = (i > 0 && j == 0) ? gap.inMilliseconds : 0;
+        result.add(
+          HapticInstruction(
+            intensity: instruction.intensity,
+            sharpness: instruction.sharpness,
+            durationMs: instruction.durationMs,
+            delayMs: instruction.delayMs + extraDelay,
+          ),
+        );
+      }
+    }
+    return result;
+  }
+
+  @override
+  String toString() => 'HapticRepeat($pattern, count: $count, gap: $gap)';
+}
+
+/// A pulse whose intensity ramps smoothly from [startIntensity] to
+/// [endIntensity] over [duration].
+///
+/// Neither platform's native API offers a shared way to express a true
+/// continuous curve: Android's amplitude-waveform API is step-function
+/// only, and while iOS's `CHHapticParameterCurve` genuinely supports
+/// one, using it would mean a different code path per platform (and
+/// per-platform tuning to keep the *feel* consistent) for a single
+/// preset-level effect. Approximating the curve as [steps] closely
+/// spaced discrete pulses instead works identically on both platforms
+/// through the same [HapticInstruction] wire format everything else
+/// already uses -- no native code changes needed. More steps feel
+/// smoother at the cost of more instructions; the default of 10 is a
+/// reasonable middle ground for short (under ~1s) curves.
+///
+/// ```dart
+/// // A fade-out over 200ms, replacing a hand-rolled 3-segment
+/// // approximation with an actual ramp.
+/// HapticCurve(startIntensity: 0.8, endIntensity: 0.0, duration: Duration(milliseconds: 200));
+/// ```
+final class HapticCurve extends HapticPattern {
+  final double startIntensity;
+  final double endIntensity;
+  final double sharpness;
+  final Duration duration;
+  final int steps;
+
+  const HapticCurve({
+    required this.startIntensity,
+    required this.endIntensity,
+    this.sharpness = 0.5,
+    required this.duration,
+    this.steps = 10,
+  })  : assert(startIntensity >= 0.0 && startIntensity <= 1.0, 'startIntensity must be 0.0-1.0'),
+        assert(endIntensity >= 0.0 && endIntensity <= 1.0, 'endIntensity must be 0.0-1.0'),
+        assert(sharpness >= 0.0 && sharpness <= 1.0, 'sharpness must be 0.0-1.0'),
+        assert(steps >= 2, 'steps must be >= 2 to interpolate between start and end');
+
+  @override
+  List<HapticInstruction> compile() {
+    final stepDurationMs = (duration.inMilliseconds / steps).round();
+
+    return [
+      for (var i = 0; i < steps; i++)
+        HapticInstruction(
+          intensity: _lerp(startIntensity, endIntensity, i / (steps - 1)),
+          sharpness: sharpness,
+          durationMs: stepDurationMs,
+          delayMs: 0,
+        ),
+    ];
+  }
+
+  static double _lerp(double start, double end, double t) =>
+      (start + (end - start) * t).clamp(0.0, 1.0);
+
+  @override
+  String toString() =>
+      'HapticCurve(startIntensity: $startIntensity, endIntensity: $endIntensity, '
+      'duration: $duration, steps: $steps)';
+}

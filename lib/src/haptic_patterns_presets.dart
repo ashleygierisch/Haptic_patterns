@@ -107,13 +107,11 @@ class HapticPatterns {
   );
 
   /// A rhythmic on-off pulse, three beats.
-  static final HapticPattern pulse = HapticSequence([
-    const HapticEvent.buzz(intensity: 0.7, duration: Duration(milliseconds: 80)),
-    delay(80),
-    const HapticEvent.buzz(intensity: 0.7, duration: Duration(milliseconds: 80)),
-    delay(80),
-    const HapticEvent.buzz(intensity: 0.7, duration: Duration(milliseconds: 80)),
-  ]);
+  static const HapticPattern pulse = HapticRepeat(
+    HapticEvent.buzz(intensity: 0.7, duration: Duration(milliseconds: 80)),
+    count: 3,
+    gap: Duration(milliseconds: 80),
+  );
 
   // ---------------------------------------------------------------
   // Dynamics
@@ -137,26 +135,13 @@ class HapticPatterns {
     const HapticEvent(intensity: 0.3, sharpness: 0.6),
   ]);
 
-  /// A smooth buzz that fades toward the end, approximated with three
-  /// decreasing-intensity segments (a true continuous intensity curve
-  /// is a candidate for the pattern composer, not this preset table).
-  static final HapticPattern swoosh = HapticSequence([
-    const HapticEvent.buzz(
-      intensity: 0.8,
-      sharpness: 0.2,
-      duration: Duration(milliseconds: 60),
-    ),
-    const HapticEvent.buzz(
-      intensity: 0.5,
-      sharpness: 0.2,
-      duration: Duration(milliseconds: 60),
-    ),
-    const HapticEvent.buzz(
-      intensity: 0.2,
-      sharpness: 0.2,
-      duration: Duration(milliseconds: 60),
-    ),
-  ]);
+  /// A smooth buzz that fades toward the end.
+  static const HapticPattern swoosh = HapticCurve(
+    startIntensity: 0.8,
+    endIntensity: 0.0,
+    sharpness: 0.2,
+    duration: Duration(milliseconds: 180),
+  );
 
   // ---------------------------------------------------------------
   // Expressive
@@ -193,15 +178,14 @@ class HapticPatterns {
   /// keyboard.
   static const HapticPattern typewriter = HapticEvent(intensity: 0.25, sharpness: 1.0);
 
-  /// Rapid successive light taps, like a drum roll.
+  /// Rapid successive light taps, like a drum roll -- four even taps
+  /// (via [HapticRepeat]) finishing on one slightly stronger accent.
   static final HapticPattern drumRoll = HapticSequence([
-    const HapticEvent(intensity: 0.5, sharpness: 0.9),
-    delay(40),
-    const HapticEvent(intensity: 0.5, sharpness: 0.9),
-    delay(40),
-    const HapticEvent(intensity: 0.5, sharpness: 0.9),
-    delay(40),
-    const HapticEvent(intensity: 0.5, sharpness: 0.9),
+    const HapticRepeat(
+      HapticEvent(intensity: 0.5, sharpness: 0.9),
+      count: 4,
+      gap: Duration(milliseconds: 40),
+    ),
     delay(40),
     const HapticEvent(intensity: 0.7, sharpness: 0.9),
   ]);
