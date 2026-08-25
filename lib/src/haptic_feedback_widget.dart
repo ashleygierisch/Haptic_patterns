@@ -24,6 +24,7 @@ import 'haptic_pattern.dart';
 /// whether [child] is a Material, Cupertino, or plain widget -- this
 /// only imports `package:flutter/widgets.dart`, not Material.
 class HapticFeedbackWidget extends StatelessWidget {
+  /// Creates a [HapticFeedbackWidget] wrapping [child].
   const HapticFeedbackWidget({
     super.key,
     required this.child,
@@ -36,6 +37,7 @@ class HapticFeedbackWidget extends StatelessWidget {
     this.behavior,
   });
 
+  /// The widget to wrap with gesture detection.
   final Widget child;
 
   /// Played when the widget is tapped.

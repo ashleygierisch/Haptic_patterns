@@ -38,6 +38,8 @@ final class HapticEvent extends HapticPattern {
   /// (instantaneous) tap; anything longer produces a continuous buzz.
   final Duration duration;
 
+  /// Creates a pulse from its raw parameters. Prefer [HapticEvent.tap],
+  /// [HapticEvent.thud], or [HapticEvent.buzz] for common shapes.
   const HapticEvent({
     this.intensity = 1.0,
     this.sharpness = 0.5,
@@ -92,14 +94,17 @@ final class HapticEvent extends HapticPattern {
 /// playable on its own -- it only has meaning as a gap between the
 /// events around it.
 final class HapticDelay extends HapticPattern {
+  /// How long the gap lasts.
   final Duration duration;
 
-  // Note: unlike HapticEvent's intensity/sharpness, there's no assert
-  // here rejecting a negative duration -- Duration has no const-
-  // evaluable comparison operator or accessor, so that check can't be
-  // expressed in a way that keeps this constructor const. A negative
-  // delay is a caller error that just produces odd (but harmless)
-  // timing, not a crash.
+  /// Creates a delay of [duration].
+  ///
+  /// Unlike [HapticEvent]'s intensity/sharpness, there's no assert here
+  /// rejecting a negative duration -- [Duration] has no const-evaluable
+  /// comparison operator or accessor, so that check can't be expressed
+  /// in a way that keeps this constructor const. A negative delay is a
+  /// caller error that just produces odd (but harmless) timing, not a
+  /// crash.
   const HapticDelay(this.duration);
 
   @override
@@ -128,8 +133,10 @@ HapticDelay delay(int milliseconds) => HapticDelay(Duration(milliseconds: millis
 /// apart, not three events. Sequences nest freely, since a
 /// [HapticSequence] is itself a [HapticPattern].
 final class HapticSequence extends HapticPattern {
+  /// The patterns to play in order.
   final List<HapticPattern> patterns;
 
+  /// Creates a sequence that plays [patterns] in order.
   const HapticSequence(this.patterns);
 
   @override
@@ -182,10 +189,17 @@ final class HapticSequence extends HapticPattern {
 /// HapticRepeat(HapticEvent.buzz(), count: 3, gap: Duration(milliseconds: 80));
 /// ```
 final class HapticRepeat extends HapticPattern {
+  /// The pattern to repeat.
   final HapticPattern pattern;
+
+  /// How many times to repeat [pattern].
   final int count;
+
+  /// The gap before each repetition after the first.
   final Duration gap;
 
+  /// Creates a pattern that repeats [pattern] [count] times, with
+  /// [gap] between each repetition.
   const HapticRepeat(this.pattern, {required this.count, this.gap = Duration.zero})
       : assert(count >= 0, 'count must be >= 0');
 
@@ -239,12 +253,24 @@ final class HapticRepeat extends HapticPattern {
 /// HapticCurve(startIntensity: 0.8, endIntensity: 0.0, duration: Duration(milliseconds: 200));
 /// ```
 final class HapticCurve extends HapticPattern {
+  /// The intensity the curve starts at, from 0.0 to 1.0.
   final double startIntensity;
+
+  /// The intensity the curve ends at, from 0.0 to 1.0.
   final double endIntensity;
+
+  /// The sharpness applied uniformly across every step.
   final double sharpness;
+
+  /// The total duration the curve is spread across.
   final Duration duration;
+
+  /// How many discrete pulses approximate the curve. Must be at least
+  /// 2 (a start and an end).
   final int steps;
 
+  /// Creates a curve from [startIntensity] to [endIntensity] over
+  /// [duration], approximated as [steps] discrete pulses.
   const HapticCurve({
     required this.startIntensity,
     required this.endIntensity,

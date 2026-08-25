@@ -25,6 +25,9 @@ class HapticInstruction {
   /// relative to the one before it.
   final int delayMs;
 
+  /// Creates an instruction. All four fields are required -- there's
+  /// no meaningful default for a low-level, already-flattened value
+  /// like this.
   const HapticInstruction({
     required this.intensity,
     required this.sharpness,
@@ -32,6 +35,8 @@ class HapticInstruction {
     required this.delayMs,
   });
 
+  /// Serializes this instruction to the map shape sent across the
+  /// platform channel.
   Map<String, Object> toMap() => {
         'intensity': intensity,
         'sharpness': sharpness,

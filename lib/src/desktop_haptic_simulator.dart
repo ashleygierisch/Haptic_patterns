@@ -39,6 +39,9 @@ import 'haptic_instruction.dart';
 /// silently, since this is a best-effort developer convenience and
 /// must never crash the app it's embedded in.
 class DesktopHapticSimulator extends HapticPatternsPlatform {
+  /// Creates a simulator. [beep] is exposed for tests that want to
+  /// record calls instead of spawning a real OS process; real callers
+  /// should leave it unset.
   DesktopHapticSimulator({
     @visibleForTesting Future<void> Function(int frequencyHz, int durationMs)? beep,
   }) : _beep = beep ?? _defaultBeep;
