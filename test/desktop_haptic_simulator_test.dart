@@ -118,6 +118,21 @@ void main() {
       expect(calls, isEmpty);
     });
 
+    test('the real (non-injected) beep never throws, even headless', () async {
+      // Exercises the actual OS-detection branch in _defaultBeep --
+      // every branch is wrapped in its own try/catch specifically so a
+      // missing beep utility (e.g. a CI runner with no audio device)
+      // can never surface as a crash.
+      final simulator = DesktopHapticSimulator();
+
+      await expectLater(
+        simulator.playInstructions(const [
+          HapticInstruction(intensity: 0.5, sharpness: 0.5, durationMs: 30, delayMs: 0),
+        ]),
+        completes,
+      );
+    });
+
     test('a new playInstructions call after stop() is unaffected', () async {
       final calls = <_RecordedBeep>[];
       final simulator = DesktopHapticSimulator(

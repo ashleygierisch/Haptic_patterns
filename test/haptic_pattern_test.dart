@@ -63,6 +63,24 @@ void main() {
       expect(const HapticEvent(intensity: 0.5), const HapticEvent(intensity: 0.5));
       expect(const HapticEvent(intensity: 0.5), isNot(const HapticEvent(intensity: 0.6)));
     });
+
+    test('equal instances share a hashCode', () {
+      expect(
+        const HapticEvent(intensity: 0.5, sharpness: 0.3).hashCode,
+        const HapticEvent(intensity: 0.5, sharpness: 0.3).hashCode,
+      );
+    });
+
+    test('toString includes intensity, sharpness, and duration', () {
+      const event = HapticEvent(
+        intensity: 0.5,
+        sharpness: 0.3,
+        duration: Duration(milliseconds: 40),
+      );
+      expect(event.toString(), contains('0.5'));
+      expect(event.toString(), contains('0.3'));
+      expect(event.toString(), contains('0:00:00.040000'));
+    });
   });
 
   group('HapticDelay', () {
@@ -85,6 +103,17 @@ void main() {
         const HapticDelay(Duration(milliseconds: 10)),
         const HapticDelay(Duration(milliseconds: 10)),
       );
+    });
+
+    test('equal instances share a hashCode', () {
+      expect(
+        const HapticDelay(Duration(milliseconds: 10)).hashCode,
+        const HapticDelay(Duration(milliseconds: 10)).hashCode,
+      );
+    });
+
+    test('toString includes the duration', () {
+      expect(const HapticDelay(Duration(milliseconds: 50)).toString(), contains('0:00:00.050000'));
     });
   });
 
@@ -186,6 +215,13 @@ void main() {
     });
   });
 
+  group('HapticSequence', () {
+    test('toString includes its patterns', () {
+      final sequence = HapticSequence([HapticEvent.tap(), delay(50)]);
+      expect(sequence.toString(), contains('HapticSequence'));
+    });
+  });
+
   group('HapticInstruction', () {
     test('toMap produces the expected keys', () {
       const instruction = HapticInstruction(intensity: 0.5, sharpness: 0.6, durationMs: 10, delayMs: 20);
@@ -203,6 +239,18 @@ void main() {
       const c = HapticInstruction(intensity: 0.9, sharpness: 0.6, durationMs: 10, delayMs: 20);
       expect(a, b);
       expect(a, isNot(c));
+    });
+
+    test('equal instances share a hashCode', () {
+      const a = HapticInstruction(intensity: 0.5, sharpness: 0.6, durationMs: 10, delayMs: 20);
+      const b = HapticInstruction(intensity: 0.5, sharpness: 0.6, durationMs: 10, delayMs: 20);
+      expect(a.hashCode, b.hashCode);
+    });
+
+    test('toString includes all four fields', () {
+      const instruction = HapticInstruction(intensity: 0.5, sharpness: 0.6, durationMs: 10, delayMs: 20);
+      final string = instruction.toString();
+      expect(string, allOf(contains('0.5'), contains('0.6'), contains('10'), contains('20')));
     });
   });
 
@@ -290,6 +338,12 @@ void main() {
       expect(compiled[0].delayMs, 0);
       expect(compiled[1].delayMs, 20);
       expect(compiled[2].delayMs, 30);
+    });
+
+    test('toString includes the pattern, count, and gap', () {
+      final repeat = const HapticRepeat(HapticEvent.tap(), count: 3, gap: Duration(milliseconds: 50));
+      final string = repeat.toString();
+      expect(string, allOf(contains('HapticRepeat'), contains('3'), contains('50')));
     });
   });
 
@@ -439,6 +493,17 @@ void main() {
       expect(compiled, hasLength(3));
       expect(compiled[1].delayMs, 20); // gap applies to the curve's first step
       expect(compiled[2].delayMs, 0); // second step of the curve, no added gap
+    });
+
+    test('toString includes intensity range, duration, and steps', () {
+      final curve = const HapticCurve(
+        startIntensity: 0.8,
+        endIntensity: 0.0,
+        duration: Duration(milliseconds: 200),
+        steps: 5,
+      );
+      final string = curve.toString();
+      expect(string, allOf(contains('0.8'), contains('0.0'), contains('5')));
     });
   });
 }
