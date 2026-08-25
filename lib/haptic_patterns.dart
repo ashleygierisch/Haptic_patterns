@@ -14,6 +14,7 @@
 /// ```
 library;
 
+export 'src/haptic_feedback_widget.dart';
 export 'src/haptic_instruction.dart';
 export 'src/haptic_pattern.dart';
 export 'src/haptic_patterns_presets.dart';
