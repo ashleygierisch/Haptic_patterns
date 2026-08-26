@@ -1,4 +1,4 @@
-## Unreleased
+## 1.0.0 / Initial release.
 
 - `HapticPattern` DSL: `HapticEvent` (with `.tap()`, `.thud()`, `.buzz()` shapes), `HapticDelay`/`delay()`, `HapticSequence`, `HapticRepeat`, `HapticCurve`
 - `HapticPlayer` — `play()`, `stop()`, `isSupported()`
