@@ -2,6 +2,7 @@ package com.artisanstudio.haptic_patterns
 
 import android.content.Context
 import android.os.Build
+import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
 import io.flutter.embedding.engine.plugins.FlutterPlugin
@@ -23,6 +24,21 @@ class HapticPatternsPlugin :
     // internal (not private) so tests can assign a fake HapticVibrator
     // directly, bypassing onAttachedToEngine's Context plumbing.
     internal lateinit var vibrator: HapticVibrator
+
+    // internal (not private) so tests can pin this to a specific API
+    // level and deterministically exercise both branches of
+    // playInstructions() -- the real Build.VERSION.SDK_INT is fixed by
+    // whatever JVM the test happens to run under, not by the plugin.
+    internal var sdkInt: Int = Build.VERSION.SDK_INT
+
+    // internal (not private) so tests can substitute a fake here.
+    // VibrationEffect.createWaveform() isn't implemented in the plain
+    // Android unit-test stub jar -- it throws
+    // "Method createWaveform in android.os.VibrationEffect not
+    // mocked" -- so exercising the API 26+ branch under JUnit needs
+    // this seam rather than calling HapticCompiler.toVibrationEffect
+    // directly and hitting that real framework call.
+    internal var vibrationEffectBuilder: (List<*>) -> VibrationEffect? = HapticCompiler::toVibrationEffect
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "haptic_patterns")
@@ -58,8 +74,8 @@ class HapticPatternsPlugin :
     private fun playInstructions(instructions: List<*>) {
         if (!vibrator.hasVibrator()) return
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val effect = HapticCompiler.toVibrationEffect(instructions)
+        if (sdkInt >= Build.VERSION_CODES.O) {
+            val effect = vibrationEffectBuilder(instructions)
             if (effect != null) vibrator.vibrate(effect)
         } else {
             // API 24-25 predates VibrationEffect entirely -- fall back

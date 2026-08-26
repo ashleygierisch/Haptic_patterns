@@ -127,22 +127,79 @@ internal class HapticPatternsPluginTest {
         Mockito.verify(mockResult).success(null)
     }
 
+    // A genuine android.os.VibrationEffect instance can't be produced
+    // in a plain JVM unit test: VibrationEffect() is package-private
+    // (blocks direct subclassing), Mockito can't mock it (the same
+    // "Could not modify all classes" ByteBuddy/JDK21 failure as
+    // android.os.Vibrator -- see FakeHapticVibrator's doc comment,
+    // and forcing Mockito's classic subclass mock maker for just this
+    // mock corrupts every other Mockito.mock() call in the same JVM,
+    // which is worse), and even Objenesis's raw-allocation bypass
+    // throws InstantiationError since it's abstract -- the JVM itself
+    // refuses to allocate an instance of an abstract class regardless
+    // of how the constructor is sidestepped. Closing that specific gap
+    // needs an instrumented/on-device test, not a JVM unit test (see
+    // Day 12 of the project plan). What's provable here instead: the
+    // plugin passes the right instructions to vibrationEffectBuilder
+    // when the API level warrants it, and correctly no-ops when the
+    // builder finds nothing playable.
     @Test
-    fun onMethodCall_playInstructions_withValidData_triggersVibration() {
-        // Build.VERSION.SDK_INT under the JVM unit-test stub isn't a
-        // real device API level, so this doesn't assert which of
-        // vibrate()/vibrateLegacy() specifically fires -- just that
-        // playInstructions() actually reaches the vibrator rather than
-        // short-circuiting, exercising whichever branch the stub
-        // routes to.
+    fun onMethodCall_playInstructions_onApi26OrAbove_invokesVibrationEffectBuilder() {
+        plugin.sdkInt = 26 // Build.VERSION_CODES.O, the lower boundary for this branch
+        var builtFrom: List<*>? = null
+        plugin.vibrationEffectBuilder = { instructions ->
+            builtFrom = instructions
+            null
+        }
         val instructions = listOf(mapOf("intensity" to 1.0, "durationMs" to 100L, "delayMs" to 0L))
         val call = MethodCall("playInstructions", instructions)
         val mockResult: MethodChannel.Result = Mockito.mock(MethodChannel.Result::class.java)
 
         plugin.onMethodCall(call, mockResult)
 
-        val vibrated = fakeVibrator.lastEffect != null || fakeVibrator.lastLegacyTimings != null
-        assertTrue(vibrated, "expected playInstructions to trigger either vibrate() or vibrateLegacy()")
+        assertEquals(instructions, builtFrom)
+        assertEquals(null, fakeVibrator.lastLegacyTimings)
+        Mockito.verify(mockResult).success(null)
+    }
+
+    @Test
+    fun onMethodCall_playInstructions_onApi26OrAbove_withNoPlayableInstructions_doesNotVibrate() {
+        plugin.sdkInt = 26
+        plugin.vibrationEffectBuilder = { null }
+        val instructions = listOf(mapOf("intensity" to 1.0, "durationMs" to 100L, "delayMs" to 0L))
+        val call = MethodCall("playInstructions", instructions)
+        val mockResult: MethodChannel.Result = Mockito.mock(MethodChannel.Result::class.java)
+
+        plugin.onMethodCall(call, mockResult)
+
+        assertEquals(null, fakeVibrator.lastEffect)
+        Mockito.verify(mockResult).success(null)
+    }
+
+    @Test
+    fun onMethodCall_playInstructions_belowApi26_usesLegacyVibrate() {
+        plugin.sdkInt = 25 // one below Build.VERSION_CODES.O, predates VibrationEffect entirely
+        val instructions = listOf(mapOf("intensity" to 1.0, "durationMs" to 100L, "delayMs" to 0L))
+        val call = MethodCall("playInstructions", instructions)
+        val mockResult: MethodChannel.Result = Mockito.mock(MethodChannel.Result::class.java)
+
+        plugin.onMethodCall(call, mockResult)
+
+        assertEquals(null, fakeVibrator.lastEffect)
+        assertTrue(fakeVibrator.lastLegacyTimings != null, "expected vibrateLegacy() to be called")
+        assertEquals(-1, fakeVibrator.lastLegacyRepeat)
+        Mockito.verify(mockResult).success(null)
+    }
+
+    @Test
+    fun onMethodCall_playInstructions_belowApi26_withEmptyList_doesNotVibrate() {
+        plugin.sdkInt = 25
+        val call = MethodCall("playInstructions", emptyList<Any>())
+        val mockResult: MethodChannel.Result = Mockito.mock(MethodChannel.Result::class.java)
+
+        plugin.onMethodCall(call, mockResult)
+
+        assertEquals(null, fakeVibrator.lastLegacyTimings)
         Mockito.verify(mockResult).success(null)
     }
 
